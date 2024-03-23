@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub Label Fetcher",
+  "version": "1.0",
+  "permissions": ["activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
