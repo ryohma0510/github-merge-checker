@@ -1,49 +1,55 @@
-function highlightNonSquashMergeOptions() {
-  const mergeButtons = document.querySelectorAll('.merge-box-button');
+// Constants and selectors definition
+// If Github changes the class names, update the below selectors
+const labelSelector = '.IssueLabel';
+const mergeButtonSelector = '.merge-box-button';
+const labelButtonClassMap = {
+  'squash-and-merge': 'btn-group-squash',
+  'create-a-merge-commit': 'btn-group-merge',
+  'rebase-and-merge': 'btn-group-rebase',
+};
+
+function highlightOtherMergeOptionsExcluding(excludedLabel) {
+  const mergeButtons = document.querySelectorAll(mergeButtonSelector);
   mergeButtons.forEach(button => {
-    if (!button.innerText.includes('Squash and merge')) {
+    if (!button.classList.contains(labelButtonClassMap[excludedLabel])) {
       button.style.backgroundColor = 'red';
       button.style.color = 'white';
     }
   });
 }
 
-function waitForMergeButtonsAndHighlight() {
-  const observer = new MutationObserver((mutations, obs) => {
-    const mergeButtons = document.querySelectorAll('.merge-box-button');
+// Github PR page dynamically add DOM, so we need to observe the DOM changes to highlight the merge options
+function observeDOMAndHighlightExcludedOption(excludedLabel) {
+  const observer = new MutationObserver(mutations => {
+    const mergeButtons = document.querySelectorAll(mergeButtonSelector);
     if (mergeButtons.length) {
-      highlightNonSquashMergeOptions();
-      obs.disconnect(); // 監視を停止
+      highlightOtherMergeOptionsExcluding(excludedLabel);
+      observer.disconnect(); // Stop observing once buttons are found
     }
   });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function highlightBasedOnLabels() {
+  const labelNames = Array.from(new Set(Array.from(document.querySelectorAll(labelSelector)).map(label => label.innerText.trim().toLowerCase())));
+
+  Object.keys(labelButtonClassMap).forEach(label => {
+    if (labelNames.includes(label)) {
+      observeDOMAndHighlightExcludedOption(label);
+
+      // No Support for multiple labels
+      return;
+    }
   });
 }
 
-function getLabelNames() {
-  const labelSelector = '.IssueLabel';
-  const labels = document.querySelectorAll(labelSelector);
-  const labelNames = Array.from(new Set(Array.from(labels).map(label => label.innerText.trim())));
-
-  return labelNames;
-}
-
-function checkURLAndRun() {
+function checkURLAndHighlightMergeOptions() {
+  // Check if the current URL is a Github OR Github Enterprize PR page.
   const urlPattern = /^https:\/\/(github\.com|github\.[a-zA-Z0-9]+\.com)\/.+\/.+\/pull\/.+$/;
-
-  if (!urlPattern.test(window.location.href)) {
-    return;
-  }
-
-  const labelNames = getLabelNames();
-
-  // 「Squash and merge」ラベルが存在するかチェック
-  if (labelNames.includes('squash and merge')) {
-    waitForMergeButtonsAndHighlight();
+  if (urlPattern.test(window.location.href)) {
+    highlightBasedOnLabels();
   }
 }
 
-window.onload = checkURLAndRun;
+window.onload = checkURLAndHighlightMergeOptions;
