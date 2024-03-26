@@ -1,54 +1,73 @@
 // Constants and selectors definition
 // If Github changes the class names, update the below selectors
 const labelSelector = '.IssueLabel';
-const mergeButtonSelector = '.merge-box-button';
 const labelButtonClassMap = {
   'squash-and-merge': 'btn-group-squash',
   'create-a-merge-commit': 'btn-group-merge',
   'rebase-and-merge': 'btn-group-rebase',
 };
 
-function highlightOtherMergeOptionsExcluding(excludedLabel) {
-  const mergeButtons = document.querySelectorAll(mergeButtonSelector);
-  mergeButtons.forEach(button => {
-    if (!button.classList.contains(labelButtonClassMap[excludedLabel])) {
-      button.style.backgroundColor = 'red';
-      button.style.color = 'white';
-    }
-  });
+function setupMutationObserver() {
+  // 監視対象のノードを指定 (document.bodyを監視対象とする)
+  const targetNode = document.body;
+
+  // MutationObserverの設定
+  const config = { childList: true, subtree: true };
+
+  // MutationObserverのコールバック関数
+  const callback = function(mutationsList, observer) {
+    // ラベルに基づいてマージオプションをハイライト
+    highlightBasedOnLabels();
+    // 必要に応じて監視を解除
+    // observer.disconnect();
+  };
+
+  // MutationObserverのインスタンスを作成
+  const observer = new MutationObserver(callback);
+
+  // 監視を開始
+  observer.observe(targetNode, config);
 }
 
-// Github PR page dynamically add DOM, so we need to observe the DOM changes to highlight the merge options
-function observeDOMAndHighlightExcludedOption(excludedLabel) {
-  const observer = new MutationObserver(mutations => {
-    const mergeButtons = document.querySelectorAll(mergeButtonSelector);
-    if (mergeButtons.length) {
-      highlightOtherMergeOptionsExcluding(excludedLabel);
-      observer.disconnect(); // Stop observing once buttons are found
-    }
-  });
+function highlightOtherMergeOptionsExcluding(label) {
+  const btn = document.querySelector(`.${labelButtonClassMap[label]}`);
+  console.log('Highlighting button:', btn);
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  btn.style.backgroundColor = 'red';
+  btn.style.color = 'white';
 }
 
 function highlightBasedOnLabels() {
   const labelNames = Array.from(new Set(Array.from(document.querySelectorAll(labelSelector)).map(label => label.innerText.trim().toLowerCase())));
 
+  let allowedMergeLabel;
   Object.keys(labelButtonClassMap).forEach(label => {
     if (labelNames.includes(label)) {
-      observeDOMAndHighlightExcludedOption(label);
+      allowedMergeLabel = label;
 
       // No Support for multiple labels
       return;
     }
   });
+
+  if (allowedMergeLabel) {
+    console.log('Allowed merge label:', allowedMergeLabel);
+
+    Object.entries(labelButtonClassMap).forEach(([key, value]) => {
+      if (key !== allowedMergeLabel) {
+        highlightOtherMergeOptionsExcluding(key);
+      }
+    });
+  }
 }
 
 function checkURLAndHighlightMergeOptions() {
+  // TODO: domain should be configurable
   // Check if the current URL is a Github OR Github Enterprize PR page.
-  const urlPattern = /^https:\/\/(github\.com|github\.[a-zA-Z0-9]+\.com)\/.+\/.+\/pull\/.+$/;
+  const urlPattern = /^https:\/\/github\.hoge\.jp\/.+\/.+\/pull\/.+$/;
   if (urlPattern.test(window.location.href)) {
-    highlightBasedOnLabels();
+    console.log('Github PR page detected');
+    setupMutationObserver();
   }
 }
 
