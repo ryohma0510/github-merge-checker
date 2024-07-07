@@ -18,6 +18,7 @@ function setupMutationObserver() {
   observer.observe(targetNode, config);
 }
 
+// TODO: bugfix
 function highlightMergeButton(label) {
   const btn = document.querySelector(`.${labelButtonClassMap[label]}`);
   if (!btn) {
