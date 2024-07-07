@@ -1,6 +1,6 @@
 // Constants and selectors definition
 // If Github changes the class names, update the below selectors
-const labelSelector = '.IssueLabel';
+const labelSelector = '.discussion-sidebar-item .IssueLabel';
 const labelButtonClassMap = {
   'squash-and-merge': 'btn-group-squash',
   'create-a-merge-commit': 'btn-group-merge',
